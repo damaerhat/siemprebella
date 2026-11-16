@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  --color-azul: #e0457b;
+  --color-azul-oscuro: #b8295c;
+  --color-naranja: #ff5c8a;
+  --color-fondo: #0d0f17;
+  --color-superficie: #151826;
+  --color-tarjeta: #1b1f30;
+}
+
+@theme {
+  --font-script: "Brush Script MT", "Segoe Script", cursive;
+}
+
+/* Tema oscuro: se aplica a todo lo que esté dentro de .app-oscura.
+   Las capas no declaradas (como esta) ganan sobre las utilidades de Tailwind. */
+.app-oscura {
+  background-color: var(--color-fondo);
+  color: #e6e8f0;
+}
+
+.app-oscura .bg-white { background-color: var(--color-tarjeta); }
+.app-oscura .bg-slate-50 { background-color: #161a2a; }
+.app-oscura .bg-slate-100 { background-color: #232840; }
+.app-oscura .hover\:bg-slate-100:hover { background-color: #2a3050; }
+.app-oscura .hover\:bg-slate-50:hover { background-color: #1e2236; }
+.app-oscura .bg-azul { background-color: var(--color-azul); color: #ffffff; }
+.app-oscura .hover\:bg-azul-oscuro:hover { background-color: var(--color-azul-oscuro); }
+.app-oscura .text-azul { color: #ff6b9a; }
+.app-oscura .shadow-sm { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03); }
+
+.app-oscura .text-slate-800 { color: #eef0f7; }
+.app-oscura .text-slate-700 { color: #d4d8e8; }
+.app-oscura .text-slate-600 { color: #aeb4c9; }
+.app-oscura .text-slate-500 { color: #8d93ab; }
+.app-oscura .text-slate-400 { color: #6b7189; }
+
+.app-oscura .border-slate-100,
+.app-oscura .border-slate-200,
+.app-oscura .border-slate-300 { border-color: #2a2f45; }
+.app-oscura .border-t { border-color: #2a2f45; }
+
+.app-oscura input,
+.app-oscura select,
+.app-oscura textarea {
+  background-color: var(--color-superficie);
+  color: #eef0f7;
+  border-color: #2a2f45;
+  color-scheme: dark;
+}
+
+.app-oscura .bg-red-100 { background-color: #3a1620; }
+.app-oscura .bg-red-50 { background-color: #2a1219; }
+.app-oscura .text-red-800 { color: #ffb4c2; }
+.app-oscura .text-red-700 { color: #ff7d8f; }
+.app-oscura .hover\:bg-red-50:hover { background-color: #3a1620; }
+
+.app-oscura .bg-green-100,
+.app-oscura .bg-emerald-100 { background-color: #12301f; }
+.app-oscura .bg-emerald-50 { background-color: #10261c; }
+.app-oscura .text-green-800,
+.app-oscura .text-emerald-800 { color: #9ff0bf; }
+.app-oscura .text-emerald-700 { color: #5ee3a0; }
+
+.app-oscura .bg-amber-100 { background-color: #3a2d12; }
+.app-oscura .text-amber-800 { color: #ffd98a; }
+.app-oscura .text-amber-700 { color: #ffc24d; }
