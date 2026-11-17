@@ -9,9 +9,9 @@ from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
-from config import settings
-from database import get_db
-from models import Usuario
+from app.config import settings
+from app.database import get_db
+from app.models import Usuario
 
 HORAS_SESION = 12
 ITERACIONES = 200_000
