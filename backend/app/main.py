@@ -18,9 +18,9 @@ app = FastAPI(title="Siempre Bella")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
+        allow_origins=[
         "http://localhost:5173",
-        # Cuando tengas el deploy en Vercel, agregá acá la URL (sin barra final)
+        "https://siemprebella1.vercel.app",
     ],
     allow_credentials=False,
     allow_methods=["*"],
