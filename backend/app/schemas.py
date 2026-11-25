@@ -51,19 +51,25 @@ class ClientaIn(BaseModel):
     activa: bool = True
 
 
-class SesionFichaIn(BaseModel):
-    numero: int = Field(ge=1, le=8)
-    detalle: str | None = Field(default=None, max_length=300)
+class ClientaOut(BaseModel):
+    id: int
+    nombre: str
+    apellido: str
+    telefono: str | None
+    fecha_nacimiento: date | None
+    activa: bool
+    fichas_activas: int = 0
 
 
-class FichaTecnicaIn(BaseModel):
-    observacion: str | None = Field(default=None, max_length=500)
-    fecha: date | None = None
-    monto: Decimal | None = Field(default=None, ge=0)
-    forma_pago: Literal["efectivo", "transferencia"] | None = None
-    sesion: str | None = Field(default=None, max_length=300)
-    medidas: str | None = Field(default=None, max_length=120)
-    foto: bool = False
+# ---------- Fichas de tratamiento ----------
+
+class FichaNuevaIn(BaseModel):
+    clienta_id: int
+    tratamiento_id: int
+    total_sesiones: int = Field(ge=1, le=50)
+
+
+class ZonasIn(BaseModel):
     abdomen_alto: Decimal | None = Field(default=None, ge=0)
     abdomen_circ: Decimal | None = Field(default=None, ge=0)
     gluteos_alto: Decimal | None = Field(default=None, ge=0)
@@ -72,32 +78,39 @@ class FichaTecnicaIn(BaseModel):
     pierna_der_circ: Decimal | None = Field(default=None, ge=0)
     pierna_izq_alto: Decimal | None = Field(default=None, ge=0)
     pierna_izq_circ: Decimal | None = Field(default=None, ge=0)
-    sesiones: list[SesionFichaIn] = Field(default_factory=list, max_length=8)
+
+
+class SesionFichaIn(BaseModel):
+    numero: int = Field(ge=1, le=50)
+    fecha: date | None = None
+    detalle: str | None = Field(default=None, max_length=300)
+
+
+class FichaEditarIn(ZonasIn):
+    observacion: str | None = Field(default=None, max_length=500)
+    foto: bool = False
+    sesiones: list[SesionFichaIn] = Field(default_factory=list)
 
 
 class SesionFichaOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     numero: int
+    fecha: date | None
     detalle: str | None
 
 
-class FichaTecnicaOut(FichaTecnicaIn):
-    model_config = ConfigDict(from_attributes=True)
-
-    sesiones: list[SesionFichaOut] = Field(default_factory=list)
-
-
-class ClientaOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class FichaOut(ZonasIn):
     id: int
-    nombre: str
-    apellido: str
-    telefono: str | None
-    fecha_nacimiento: date | None
-    activa: bool
-    ficha: FichaTecnicaOut | None = None
+    clienta_id: int
+    tratamiento_id: int | None
+    nombre_tratamiento: str
+    total_sesiones: int
+    realizadas: int
+    estado: str
+    fecha_inicio: date
+    fecha_fin: date | None
+    observacion: str | None
+    foto: bool
+    sesiones: list[SesionFichaOut] = Field(default_factory=list)
 
 
 

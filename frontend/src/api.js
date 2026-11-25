@@ -66,9 +66,11 @@ export const api = {
     request(`/clientas?q=${encodeURIComponent(q)}&incluir_inactivas=${incluirInactivas}`),
   crearClienta: (datos) => request("/clientas", { method: "POST", body: json(datos) }),
   editarClienta: (id, datos) => request(`/clientas/${id}`, { method: "PUT", body: json(datos) }),
-  guardarFicha: (id, datos) =>
-    request(`/clientas/${id}/ficha`, { method: "PUT", body: json(datos) }),
-
+    fichas: (clientaId) => request(`/fichas?clienta_id=${clientaId}`),
+  crearFicha: (datos) => request("/fichas", { method: "POST", body: json(datos) }),
+  editarFicha: (id, datos) => request(`/fichas/${id}`, { method: "PUT", body: json(datos) }),
+  terminarFicha: (id) => request(`/fichas/${id}/terminar`, { method: "POST" }),
+  reabrirFicha: (id) => request(`/fichas/${id}/reabrir`, { method: "POST" }),
   recursos: () => request("/recursos"),
   asignarEquipos: (id, equipo_ids) =>
     request(`/recursos/${id}/equipos`, { method: "PUT", body: json({ equipo_ids }) }),

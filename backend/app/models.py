@@ -18,6 +18,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
+def ahora_ar() -> datetime:
+    """Hora de Argentina, sin zona horaria (UTC-3, no tiene cambio de horario)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=3)
+
 
 class Clienta(Base):
     __tablename__ = "clientas"
@@ -35,30 +39,31 @@ class Clienta(Base):
         DateTime, default=lambda: ahora_ar(), server_default=func.now()
     )
 
-    ficha: Mapped["FichaTecnica | None"] = relationship(
-        back_populates="clienta", uselist=False, cascade="all, delete-orphan"
+    fichas: Mapped[list["FichaTratamiento"]] = relationship(
+        back_populates="clienta", cascade="all, delete-orphan", order_by="FichaTratamiento.id"
     )
 
 
-class FichaTecnica(Base):
-    """Ficha técnica de depilación definitiva: sesiones y medidas de la clienta."""
 
-    __tablename__ = "fichas_tecnicas"
+
+class FichaTratamiento(Base):
+    """Ficha de un tratamiento de la clienta. Puede haber varias activas a la vez."""
+
+    __tablename__ = "fichas_tratamiento"
     __table_args__ = (
-        CheckConstraint(
-            "forma_pago IS NULL OR forma_pago IN ('efectivo', 'transferencia')",
-            name="ck_ficha_forma_pago",
-        ),
+        CheckConstraint("estado IN ('activo', 'terminado')", name="ck_ficha_estado"),
+        CheckConstraint("total_sesiones BETWEEN 1 AND 50", name="ck_ficha_total"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    clienta_id: Mapped[int] = mapped_column(ForeignKey("clientas.id"), unique=True)
+    clienta_id: Mapped[int] = mapped_column(ForeignKey("clientas.id"))
+    tratamiento_id: Mapped[int | None] = mapped_column(ForeignKey("tratamientos.id"))
+    nombre_tratamiento: Mapped[str] = mapped_column(String(160))  # copia del nombre al iniciar
+    total_sesiones: Mapped[int] = mapped_column(Integer)
+    estado: Mapped[str] = mapped_column(String(20), default="activo")
+    fecha_inicio: Mapped[date] = mapped_column(Date, default=lambda: ahora_ar().date())
+    fecha_fin: Mapped[date | None] = mapped_column(Date)
     observacion: Mapped[str | None] = mapped_column(Text)
-    fecha: Mapped[date | None] = mapped_column(Date)
-    monto: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
-    forma_pago: Mapped[str | None] = mapped_column(String(20))
-    sesion: Mapped[str | None] = mapped_column(String(300))
-    medidas: Mapped[str | None] = mapped_column(String(120))
     foto: Mapped[bool] = mapped_column(Boolean, default=False)
     abdomen_alto: Mapped[Decimal | None] = mapped_column(Numeric(6, 1))
     abdomen_circ: Mapped[Decimal | None] = mapped_column(Numeric(6, 1))
@@ -68,30 +73,33 @@ class FichaTecnica(Base):
     pierna_der_circ: Mapped[Decimal | None] = mapped_column(Numeric(6, 1))
     pierna_izq_alto: Mapped[Decimal | None] = mapped_column(Numeric(6, 1))
     pierna_izq_circ: Mapped[Decimal | None] = mapped_column(Numeric(6, 1))
+    creada_en: Mapped[datetime] = mapped_column(DateTime, default=ahora_ar)
 
-    clienta: Mapped[Clienta] = relationship(back_populates="ficha")
-    sesiones: Mapped[list["SesionFicha"]] = relationship(
+    clienta: Mapped[Clienta] = relationship(back_populates="fichas")
+    tratamiento: Mapped["Tratamiento | None"] = relationship()
+    sesiones: Mapped[list["FichaSesion"]] = relationship(
         back_populates="ficha",
         cascade="all, delete-orphan",
-        order_by="SesionFicha.numero",
+        order_by="FichaSesion.numero",
     )
 
 
-class SesionFicha(Base):
-    """Renglones 1 a 8 de la ficha técnica."""
+class FichaSesion(Base):
+    """Renglón de sesión de una ficha. Tiene fecha cuando la sesión se realizó."""
 
-    __tablename__ = "sesiones_ficha"
+    __tablename__ = "ficha_sesiones"
     __table_args__ = (
-        UniqueConstraint("ficha_id", "numero", name="uq_sesion_ficha_numero"),
-        CheckConstraint("numero BETWEEN 1 AND 8", name="ck_sesion_ficha_numero"),
+        UniqueConstraint("ficha_id", "numero", name="uq_ficha_sesion_numero"),
+        CheckConstraint("numero >= 1", name="ck_ficha_sesion_numero"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    ficha_id: Mapped[int] = mapped_column(ForeignKey("fichas_tecnicas.id"))
+    ficha_id: Mapped[int] = mapped_column(ForeignKey("fichas_tratamiento.id", ondelete="CASCADE"))
     numero: Mapped[int] = mapped_column(Integer)
+    fecha: Mapped[date | None] = mapped_column(Date)
     detalle: Mapped[str | None] = mapped_column(Text)
 
-    ficha: Mapped[FichaTecnica] = relationship(back_populates="sesiones")
+    ficha: Mapped[FichaTratamiento] = relationship(back_populates="sesiones")
 
 
 class Tratamiento(Base):
@@ -220,9 +228,7 @@ class Turno(Base):
 
 
 
-def ahora_ar() -> datetime:
-    """Hora de Argentina, sin zona horaria (UTC-3, no tiene cambio de horario)."""
-    return datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=3)
+
 
 
 class Pago(Base):

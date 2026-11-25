@@ -5,6 +5,7 @@ from app.routers import (
     auth,
     caja,
     clientas,
+    fichas,
     inicio,
     jornadas,
     recursos,
@@ -18,7 +19,7 @@ app = FastAPI(title="Siempre Bella")
 
 app.add_middleware(
     CORSMiddleware,
-        allow_origins=[
+    allow_origins=[
         "http://localhost:5173",
         "https://siemprebella1.vercel.app",
     ],
@@ -31,6 +32,7 @@ app.include_router(auth.router)
 app.include_router(tratamientos.router)
 app.include_router(servicios_depilacion.router)
 app.include_router(clientas.router)
+app.include_router(fichas.router)
 app.include_router(recursos.router)
 app.include_router(recursos.equipos_router)
 app.include_router(turnos.router)

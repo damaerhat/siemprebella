@@ -1,12 +1,10 @@
-from datetime import date
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
-from app.models import Clienta, FichaTecnica, SesionFicha
-from app.schemas import ClientaIn, ClientaOut, FichaTecnicaIn
+from app.models import Clienta
+from app.schemas import ClientaIn, ClientaOut
 from app.security import get_current_user
 
 router = APIRouter(
@@ -33,15 +31,25 @@ def _datos(datos: ClientaIn) -> dict:
     }
 
 
-def _opciones():
-    return selectinload(Clienta.ficha).selectinload(FichaTecnica.sesiones)
-
-
 def _cargar(db: Session, id: int) -> Clienta:
-    c = db.scalars(select(Clienta).where(Clienta.id == id).options(_opciones())).first()
+    c = db.scalars(
+        select(Clienta).where(Clienta.id == id).options(selectinload(Clienta.fichas))
+    ).first()
     if c is None:
         raise HTTPException(404, "Clienta no encontrada")
     return c
+
+
+def _salida(c: Clienta) -> ClientaOut:
+    return ClientaOut(
+        id=c.id,
+        nombre=c.nombre,
+        apellido=c.apellido,
+        telefono=c.telefono,
+        fecha_nacimiento=c.fecha_nacimiento,
+        activa=c.activa,
+        fichas_activas=sum(1 for f in c.fichas if f.estado == "activo"),
+    )
 
 
 @router.get("", response_model=list[ClientaOut])
@@ -50,7 +58,11 @@ def listar(
     incluir_inactivas: bool = Query(False),
     db: Session = Depends(get_db),
 ):
-    stmt = select(Clienta).options(_opciones()).order_by(Clienta.apellido, Clienta.nombre)
+    stmt = (
+        select(Clienta)
+        .options(selectinload(Clienta.fichas))
+        .order_by(Clienta.apellido, Clienta.nombre)
+    )
     if not incluir_inactivas:
         stmt = stmt.where(Clienta.activa.is_(True))
     if q and q.strip():
@@ -62,12 +74,12 @@ def listar(
                 Clienta.telefono.ilike(like),
             )
         )
-    return [ClientaOut.model_validate(c) for c in db.scalars(stmt.limit(200)).all()]
+    return [_salida(c) for c in db.scalars(stmt.limit(200)).all()]
 
 
 @router.get("/{id}", response_model=ClientaOut)
 def obtener(id: int, db: Session = Depends(get_db)):
-    return ClientaOut.model_validate(_cargar(db, id))
+    return _salida(_cargar(db, id))
 
 
 @router.post("", response_model=ClientaOut, status_code=201)
@@ -75,7 +87,7 @@ def crear(datos: ClientaIn, db: Session = Depends(get_db)):
     c = Clienta(**_datos(datos))
     db.add(c)
     db.commit()
-    return ClientaOut.model_validate(_cargar(db, c.id))
+    return _salida(_cargar(db, c.id))
 
 
 @router.put("/{id}", response_model=ClientaOut)
@@ -84,24 +96,4 @@ def editar(id: int, datos: ClientaIn, db: Session = Depends(get_db)):
     for campo, valor in _datos(datos).items():
         setattr(c, campo, valor)
     db.commit()
-    return ClientaOut.model_validate(_cargar(db, id))
-
-
-@router.put("/{id}/ficha", response_model=ClientaOut)
-def guardar_ficha(id: int, datos: FichaTecnicaIn, db: Session = Depends(get_db)):
-    """Crea o actualiza la ficha técnica. Los renglones de sesiones se reemplazan completos."""
-    c = _cargar(db, id)
-    ficha = c.ficha or FichaTecnica(clienta_id=c.id)
-    for campo, valor in datos.model_dump(exclude={"sesiones"}).items():
-        setattr(ficha, campo, valor)
-    db.add(ficha)
-    db.flush()
-
-    # Igual que en otros módulos: borrar, flushear y recién después insertar
-    ficha.sesiones.clear()
-    db.flush()
-    for s in datos.sesiones:
-        ficha.sesiones.append(SesionFicha(numero=s.numero, detalle=s.detalle))
-
-    db.commit()
-    return ClientaOut.model_validate(_cargar(db, id))
+    return _salida(_cargar(db, id))
